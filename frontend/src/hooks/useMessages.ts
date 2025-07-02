@@ -91,7 +91,7 @@ export function useMessages(): UseMessagesReturn {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [signMessage]);
 
   // Clear all messages
   const clearMessages = useCallback(() => {

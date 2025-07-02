@@ -16,7 +16,6 @@ interface UseWalletReturn {
 export function useWallet(): UseWalletReturn {
   const { 
     user, 
-    isInitialized, 
     handleConnect, 
     handleDisconnect, 
     handleSignMessage,
@@ -27,12 +26,7 @@ export function useWallet(): UseWalletReturn {
   const [error, setError] = useState<string | null>(null);
 
   // Connect wallet
-  const connect = useCallback(async () => {
-    if (!isInitialized) {
-      setError('Dynamic.xyz is not initialized');
-      return;
-    }
-
+  const connectWallet = useCallback(async () => {
     setError(null);
 
     try {
@@ -41,23 +35,21 @@ export function useWallet(): UseWalletReturn {
       setError(err.message || 'Failed to connect wallet');
       console.error('Wallet connection error:', err);
     }
-  }, [isInitialized, handleConnect]);
+  }, [handleConnect]);
 
   // Disconnect wallet
-  const disconnect = useCallback(async () => {
-    if (!isInitialized) return;
-
+  const disconnectWallet = useCallback(async () => {
     try {
       await handleDisconnect();
     } catch (err: any) {
       setError(err.message || 'Failed to disconnect wallet');
       console.error('Wallet disconnection error:', err);
     }
-  }, [isInitialized, handleDisconnect]);
+  }, [handleDisconnect]);
 
   // Sign message
-  const signMessage = useCallback(async (message: string): Promise<string> => {
-    if (!isInitialized || !primaryWallet) {
+  const signMessageWallet = useCallback(async (message: string): Promise<string> => {
+    if (!primaryWallet) {
       throw new Error('Wallet not connected');
     }
 
@@ -68,7 +60,7 @@ export function useWallet(): UseWalletReturn {
       console.error('Message signing error:', err);
       throw new Error(err.message || 'Failed to sign message');
     }
-  }, [isInitialized, primaryWallet, handleSignMessage]);
+  }, [primaryWallet, handleSignMessage]);
 
   // Refresh user data
   const refreshUser = useCallback(async () => {
@@ -93,9 +85,9 @@ export function useWallet(): UseWalletReturn {
     isConnected: !!user && !!primaryWallet,
     isLoading: isConnecting,
     error,
-    connect,
-    disconnect,
-    signMessage,
+    connect: connectWallet,
+    disconnect: disconnectWallet,
+    signMessage: signMessageWallet,
     refreshUser,
   };
 } 

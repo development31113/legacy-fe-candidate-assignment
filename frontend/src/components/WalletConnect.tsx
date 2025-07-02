@@ -5,11 +5,9 @@ import Card from '@/components/ui/Card';
 import { formatAddress } from '@/utils/format';
 import { Wallet, LogOut, Copy, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 
 const WalletConnect: React.FC = () => {
   const { user, isConnected, isLoading, error, connect, disconnect } = useWallet();
-  const { mfa } = useDynamicContext();
 
   const handleCopyAddress = async () => {
     if (user?.walletAddress) {
@@ -47,8 +45,8 @@ const WalletConnect: React.FC = () => {
                     <Copy className="w-4 h-4" />
                   </button>
                 </div>
-                {mfa?.isEnabled && (
-                  <div className="mt-1 text-xs text-blue-600 font-semibold">MFA enabled</div>
+                {user?.email && (
+                  <div className="mt-1 text-xs text-blue-600 font-semibold">Email: {user.email}</div>
                 )}
               </div>
             </div>
