@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_BACKEND_URL=http://backend:3001
+      - NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID=${NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID}
+    depends_on:
+      - backend
+    networks:
+      - web3-app
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - NODE_ENV=production
+      - CORS_ORIGIN=http://localhost:3000
+    networks:
+      - web3-app
+
+networks:
+  web3-app:
+    driver: bridge 
