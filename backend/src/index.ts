@@ -80,11 +80,11 @@ app.use((req, res, next) => {
 app.use('/api', signatureRoutes);
 
 // Root endpoint
-app.get('/', (req, res) => {
+app.get('/', (_req, res) => {
   res.json({
     success: true,
     message: 'Web3 Message Signer API',
-    version: process.env.npm_package_version || '1.0.0',
+    version: process.env['npm_package_version'] || '1.0.0',
     endpoints: {
       'POST /api/verify-signature': 'Verify a message signature',
       'GET /api/health': 'Health check',

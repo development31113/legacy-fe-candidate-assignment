@@ -13,13 +13,13 @@ for (const envVar of requiredEnvVars) {
 }
 
 export const config: ServerConfig = {
-  port: parseInt(process.env.PORT || '3001', 10),
-  nodeEnv: process.env.NODE_ENV || 'development',
-  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-  rateLimitWindowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),
-  rateLimitMaxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10),
-  helmetEnabled: process.env.HELMET_ENABLED !== 'false',
-  compressionEnabled: process.env.COMPRESSION_ENABLED !== 'false',
+  port: parseInt(process.env['PORT'] || '3001', 10),
+  nodeEnv: process.env['NODE_ENV'] || 'development',
+  corsOrigin: process.env['CORS_ORIGIN'] || 'http://localhost:3000',
+  rateLimitWindowMs: parseInt(process.env['RATE_LIMIT_WINDOW_MS'] || '900000', 10),
+  rateLimitMaxRequests: parseInt(process.env['RATE_LIMIT_MAX_REQUESTS'] || '100', 10),
+  helmetEnabled: process.env['HELMET_ENABLED'] !== 'false',
+  compressionEnabled: process.env['COMPRESSION_ENABLED'] !== 'false',
 };
 
 // Validate configuration
