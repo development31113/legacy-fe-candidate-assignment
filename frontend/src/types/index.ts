@@ -19,6 +19,7 @@ export interface MessageData {
   signature: string;
   timestamp: number;
   walletAddress: string;
+  verificationResult?: VerifySignatureResponse;
 }
 
 export interface SignatureRequest {

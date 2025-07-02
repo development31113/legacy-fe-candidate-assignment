@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    appDir: true,
-  },
   output: 'standalone',
   webpack: (config) => {
     config.resolve.fallback = {
@@ -14,7 +11,7 @@ const nextConfig = {
     return config;
   },
   env: {
-    CUSTOM_KEY: process.env.CUSTOM_KEY,
+    CUSTOM_KEY: process.env.CUSTOM_KEY || '',
   },
 }
 
