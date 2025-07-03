@@ -18,11 +18,11 @@ describe('useWallet Hook', () => {
     mockUseDynamicContext.mockReturnValue({
       user: null,
       isInitialized: true,
-      handleConnect: jest.fn(),
-      handleDisconnect: jest.fn(),
-      handleSignMessage: jest.fn(),
+      setShowAuthFlow: jest.fn(),
+      handleLogOut: jest.fn(),
       primaryWallet: null,
       isConnecting: false,
+      loadingNetwork: false,
     });
   });
 
@@ -44,25 +44,26 @@ describe('useWallet Hook', () => {
     const mockPrimaryWallet = {
       address: '0x1234567890123456789012345678901234567890',
       chainId: 1,
+      connector: { signMessage: jest.fn() },
     };
 
-    const mockHandleConnect = jest.fn().mockResolvedValue(undefined);
+    const mockSetShowAuthFlow = jest.fn();
 
     mockUseDynamicContext.mockReturnValue({
       user: mockUser,
       isInitialized: true,
-      handleConnect: mockHandleConnect,
-      handleDisconnect: jest.fn(),
-      handleSignMessage: jest.fn(),
+      setShowAuthFlow: mockSetShowAuthFlow,
+      handleLogOut: jest.fn(),
       primaryWallet: mockPrimaryWallet,
       isConnecting: false,
+      loadingNetwork: false,
     });
 
     const { result } = renderHook(() => useWallet());
 
     expect(result.current.isConnected).toBe(true);
     expect(result.current.user).toEqual({
-      id: 'user-123',
+      id: 'test@example.com',
       email: 'test@example.com',
       walletAddress: '0x1234567890123456789012345678901234567890',
       wallets: [{
@@ -74,16 +75,16 @@ describe('useWallet Hook', () => {
   });
 
   it('should handle connection error', async () => {
-    const mockHandleConnect = jest.fn().mockRejectedValue(new Error('Connection failed'));
+    const mockSetShowAuthFlow = jest.fn(() => { throw new Error('Connection failed'); });
 
     mockUseDynamicContext.mockReturnValue({
       user: null,
       isInitialized: true,
-      handleConnect: mockHandleConnect,
-      handleDisconnect: jest.fn(),
-      handleSignMessage: jest.fn(),
+      setShowAuthFlow: mockSetShowAuthFlow,
+      handleLogOut: jest.fn(),
       primaryWallet: null,
       isConnecting: false,
+      loadingNetwork: false,
     });
 
     const { result } = renderHook(() => useWallet());
@@ -98,39 +99,40 @@ describe('useWallet Hook', () => {
   it('should handle message signing', async () => {
     const mockSignature = '0x1234567890abcdef';
     const message = 'Hello, Web3!';
-    const mockHandleSignMessage = jest.fn().mockResolvedValue(mockSignature);
+    const mockSignMessage = jest.fn().mockResolvedValue(mockSignature);
 
     const mockPrimaryWallet = {
       address: '0x1234567890123456789012345678901234567890',
       chainId: 1,
+      connector: { signMessage: mockSignMessage },
     };
 
     mockUseDynamicContext.mockReturnValue({
       user: { id: 'user-123' },
       isInitialized: true,
-      handleConnect: jest.fn(),
-      handleDisconnect: jest.fn(),
-      handleSignMessage: mockHandleSignMessage,
+      setShowAuthFlow: jest.fn(),
+      handleLogOut: jest.fn(),
       primaryWallet: mockPrimaryWallet,
       isConnecting: false,
+      loadingNetwork: false,
     });
 
     const { result } = renderHook(() => useWallet());
 
     const signature = await result.current.signMessage(message);
     expect(signature).toBe(mockSignature);
-    expect(mockHandleSignMessage).toHaveBeenCalledWith(message);
+    expect(mockSignMessage).toHaveBeenCalledWith(message);
   });
 
   it('should handle signing error when not connected', async () => {
     mockUseDynamicContext.mockReturnValue({
       user: null,
       isInitialized: true,
-      handleConnect: jest.fn(),
-      handleDisconnect: jest.fn(),
-      handleSignMessage: jest.fn(),
+      setShowAuthFlow: jest.fn(),
+      handleLogOut: jest.fn(),
       primaryWallet: null,
       isConnecting: false,
+      loadingNetwork: false,
     });
 
     const { result } = renderHook(() => useWallet());
