@@ -4,7 +4,7 @@ import React from 'react';
 import WalletConnect from '@/components/WalletConnect';
 import MessageSigner from '@/components/MessageSigner';
 import MessageHistory from '@/components/MessageHistory';
-import ApiProviderSelector from '@/components/ApiProviderSelector';
+import { ApiProviderSelector } from '@/components/ApiProviderSelector';
 import { Shield, Zap, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 

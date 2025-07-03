@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ApiService } from '../services/api';
 import { StorageService } from '../services/storage';
-import { Button } from './ui/Button';
-import { Card } from './ui/Card';
+import Button from './ui/Button';
+import Card from './ui/Card';
 
 export const ApiProviderSelector = () => {
   const [currentProvider, setCurrentProvider] = useState<'vercel' | 'aws'>('vercel');
@@ -21,23 +20,36 @@ export const ApiProviderSelector = () => {
   const checkHealthStatus = async () => {
     setIsLoading(true);
     
-    // Проверяем Vercel API
-    try {
-      const originalProvider = process.env.NEXT_PUBLIC_API_PROVIDER;
-      process.env.NEXT_PUBLIC_API_PROVIDER = 'vercel';
-      await ApiService.healthCheck();
-      setHealthStatus(prev => ({ ...prev, vercel: true }));
-    } catch (error) {
+    const vercelUrl = process.env.NEXT_PUBLIC_VERCEL_API_URL;
+    const awsUrl = process.env.NEXT_PUBLIC_AWS_API_URL;
+    
+    // Check Vercel API only if URL is configured
+    if (vercelUrl) {
+      try {
+        const response = await fetch(`${vercelUrl}/api/health`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        setHealthStatus(prev => ({ ...prev, vercel: response.ok }));
+      } catch (error) {
+        setHealthStatus(prev => ({ ...prev, vercel: false }));
+      }
+    } else {
       setHealthStatus(prev => ({ ...prev, vercel: false }));
     }
 
-    // Проверяем AWS API
-    try {
-      const originalProvider = process.env.NEXT_PUBLIC_API_PROVIDER;
-      process.env.NEXT_PUBLIC_API_PROVIDER = 'aws';
-      await ApiService.healthCheck();
-      setHealthStatus(prev => ({ ...prev, aws: true }));
-    } catch (error) {
+    // Check AWS API only if URL is configured
+    if (awsUrl) {
+      try {
+        const response = await fetch(`${awsUrl}/health`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        setHealthStatus(prev => ({ ...prev, aws: response.ok }));
+      } catch (error) {
+        setHealthStatus(prev => ({ ...prev, aws: false }));
+      }
+    } else {
       setHealthStatus(prev => ({ ...prev, aws: false }));
     }
 
@@ -46,8 +58,8 @@ export const ApiProviderSelector = () => {
 
   const switchProvider = (provider: 'vercel' | 'aws') => {
     setCurrentProvider(provider);
-    // В реальном приложении здесь нужно обновить переменную окружения
-    // или использовать контекст для управления API провайдером
+    // In a real application, you would update the environment variable
+    // or use context to manage the API provider
     console.log(`Switched to ${provider} API provider`);
   };
 
@@ -104,7 +116,7 @@ export const ApiProviderSelector = () => {
         </div>
 
         <div className="text-xs text-gray-500">
-          <p>API URL: {storageInfo.apiUrl}</p>
+          <p>API URL: {storageInfo.apiUrl || 'Local Development (No external API)'}</p>
           <p>Status: {isLoading ? 'Checking...' : 'Ready'}</p>
         </div>
 

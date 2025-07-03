@@ -150,7 +150,7 @@ const MessageHistory: React.FC = () => {
           <AnimatePresence>
             {messages.map((message, index) => (
               <motion.div
-                key={message.id}
+                key={message.messageId}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}

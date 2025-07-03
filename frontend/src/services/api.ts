@@ -1,16 +1,16 @@
 import { Message, VerifySignatureRequest, VerifySignatureResponse } from '../types';
 
 // Определяем тип API провайдера
-export type ApiProvider = 'vercel' | 'aws';
+export type ApiProvider = 'vercel' | 'aws' | 'local';
 
 // Конфигурация API
 const API_CONFIG = {
   vercel: {
-    baseUrl: process.env.NEXT_PUBLIC_VERCEL_API_URL || '/api',
+    baseUrl: process.env.NEXT_PUBLIC_VERCEL_API_URL || '',
     endpoints: {
-      verifySignature: '/verify-signature',
-      messages: '/messages',
-      health: '/health'
+      verifySignature: '/api/verify-signature',
+      messages: '/api/messages',
+      health: '/api/health'
     }
   },
   aws: {
@@ -25,13 +25,30 @@ const API_CONFIG = {
 
 // Получаем активный провайдер из переменных окружения
 const getActiveProvider = (): ApiProvider => {
-  return (process.env.NEXT_PUBLIC_API_PROVIDER as ApiProvider) || 'vercel';
+  const provider = process.env.NEXT_PUBLIC_API_PROVIDER as ApiProvider;
+  if (provider === 'local') return 'local';
+  
+  // Check if external APIs are configured
+  if (process.env.NEXT_PUBLIC_VERCEL_API_URL) return 'vercel';
+  if (process.env.NEXT_PUBLIC_AWS_API_URL) return 'aws';
+  
+  // Default to local if no external APIs are configured
+  return 'local';
 };
 
 // Получаем конфигурацию для активного провайдера
 const getApiConfig = () => {
   const provider = getActiveProvider();
+  if (provider === 'local') {
+    throw new Error('External API not configured. Running in local mode.');
+  }
   return API_CONFIG[provider];
+};
+
+// Проверяем, доступен ли внешний API
+const isExternalApiAvailable = () => {
+  const provider = getActiveProvider();
+  return provider !== 'local';
 };
 
 // Базовый URL для API
@@ -70,6 +87,10 @@ const handleResponse = async (response: Response) => {
 export class ApiService {
   // Проверка здоровья API
   static async healthCheck(): Promise<any> {
+    if (!isExternalApiAvailable()) {
+      throw new Error('External API not available in local mode');
+    }
+    
     try {
       const response = await fetch(getEndpointUrl('health'), {
         method: 'GET',
@@ -84,6 +105,10 @@ export class ApiService {
 
   // Верификация подписи
   static async verifySignature(data: VerifySignatureRequest): Promise<VerifySignatureResponse> {
+    if (!isExternalApiAvailable()) {
+      throw new Error('External API not available in local mode');
+    }
+    
     try {
       const response = await fetch(getEndpointUrl('verifySignature'), {
         method: 'POST',
@@ -99,6 +124,10 @@ export class ApiService {
 
   // Получение сообщений
   static async getMessages(walletAddress: string): Promise<Message[]> {
+    if (!isExternalApiAvailable()) {
+      throw new Error('External API not available in local mode');
+    }
+    
     try {
       const url = `${getEndpointUrl('messages')}?walletAddress=${encodeURIComponent(walletAddress)}`;
       const response = await fetch(url, {
@@ -115,6 +144,10 @@ export class ApiService {
 
   // Сохранение сообщения
   static async saveMessage(message: Omit<Message, 'messageId' | 'timestamp'>): Promise<Message> {
+    if (!isExternalApiAvailable()) {
+      throw new Error('External API not available in local mode');
+    }
+    
     try {
       const response = await fetch(getEndpointUrl('messages'), {
         method: 'POST',
@@ -131,6 +164,10 @@ export class ApiService {
 
   // Удаление сообщений
   static async deleteMessages(walletAddress: string): Promise<void> {
+    if (!isExternalApiAvailable()) {
+      throw new Error('External API not available in local mode');
+    }
+    
     try {
       const url = `${getEndpointUrl('messages')}?walletAddress=${encodeURIComponent(walletAddress)}`;
       const response = await fetch(url, {
@@ -147,6 +184,14 @@ export class ApiService {
   // Получение информации о текущем API провайдере
   static getApiInfo() {
     const provider = getActiveProvider();
+    if (provider === 'local') {
+      return {
+        provider: 'local',
+        baseUrl: '',
+        endpoints: {}
+      };
+    }
+    
     const config = getApiConfig();
     return {
       provider,

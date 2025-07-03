@@ -1,6 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { kv } from '@vercel/kv';
 import { MessageData } from '@/types';
+
+// Local storage fallback for development
+const localStorage = new Map<string, MessageData[]>();
+
+// Helper function to get KV instance
+async function getKV() {
+  // Check if Vercel KV environment variables are available
+  const hasVercelKV = process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN;
+  
+  if (hasVercelKV) {
+    try {
+      const { kv } = await import('@vercel/kv');
+      return kv;
+    } catch (error) {
+      console.error('Vercel KV import failed:', error);
+      return null;
+    }
+  }
+  
+  return null;
+}
 
 // GET /api/messages?walletAddress=0x...
 export async function GET(request: NextRequest) {
@@ -15,8 +35,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get messages for specific wallet from KV
-    const messages = await kv.get<MessageData[]>(`messages:${walletAddress.toLowerCase()}`) || [];
+    const kv = await getKV();
+    let messages: MessageData[] = [];
+
+    if (kv) {
+      // Use Vercel KV
+      messages = await kv.get<MessageData[]>(`messages:${walletAddress.toLowerCase()}`) || [];
+    } else {
+      // Use local fallback
+      messages = localStorage.get(`messages:${walletAddress.toLowerCase()}`) || [];
+    }
 
     return NextResponse.json({
       success: true,
@@ -44,8 +72,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get existing messages for this wallet
-    const existingMessages = await kv.get<MessageData[]>(`messages:${walletAddress.toLowerCase()}`) || [];
+    const kv = await getKV();
+    let existingMessages: MessageData[] = [];
+
+    if (kv) {
+      // Use Vercel KV
+      existingMessages = await kv.get<MessageData[]>(`messages:${walletAddress.toLowerCase()}`) || [];
+    } else {
+      // Use local fallback
+      existingMessages = localStorage.get(`messages:${walletAddress.toLowerCase()}`) || [];
+    }
     
     // Add new message to the beginning
     const updatedMessages = [message, ...existingMessages];
@@ -53,8 +89,13 @@ export async function POST(request: NextRequest) {
     // Keep only last 50 messages per wallet
     const limitedMessages = updatedMessages.slice(0, 50);
     
-    // Save to KV
-    await kv.set(`messages:${walletAddress.toLowerCase()}`, limitedMessages);
+    if (kv) {
+      // Save to KV
+      await kv.set(`messages:${walletAddress.toLowerCase()}`, limitedMessages);
+    } else {
+      // Save to local fallback
+      localStorage.set(`messages:${walletAddress.toLowerCase()}`, limitedMessages);
+    }
 
     return NextResponse.json({
       success: true,
@@ -82,8 +123,15 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Delete messages for specific wallet
-    await kv.del(`messages:${walletAddress.toLowerCase()}`);
+    const kv = await getKV();
+
+    if (kv) {
+      // Delete from KV
+      await kv.del(`messages:${walletAddress.toLowerCase()}`);
+    } else {
+      // Delete from local fallback
+      localStorage.delete(`messages:${walletAddress.toLowerCase()}`);
+    }
 
     return NextResponse.json({
       success: true,

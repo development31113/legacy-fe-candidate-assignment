@@ -7,6 +7,9 @@ const STORAGE_KEYS = {
   USER_PREFERENCES: 'web3_user_preferences',
 } as const;
 
+const getApiProvider = () =>
+  typeof window !== 'undefined' ? (window as any).NEXT_PUBLIC_API_PROVIDER || process.env.NEXT_PUBLIC_API_PROVIDER || 'vercel' : process.env.NEXT_PUBLIC_API_PROVIDER || 'vercel';
+
 export class StorageService {
   private static instance: StorageService;
   private useDatabase: boolean;
@@ -23,10 +26,23 @@ export class StorageService {
     return StorageService.instance;
   }
 
+  // ===== LOCAL STORAGE ONLY MODE =====
+  private static isLocalOnly() {
+    return getApiProvider() === 'local';
+  }
+
   /**
    * Save messages to database or localStorage
    */
   static async saveMessages(messages: MessageData[], walletAddress?: string): Promise<void> {
+    if (this.isLocalOnly()) {
+      try {
+        localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(messages));
+      } catch (error) {
+        console.error('Failed to save messages to localStorage:', error);
+      }
+      return;
+    }
     try {
       // Try database first if wallet address is provided
       if (walletAddress && await DatabaseService.isAvailable()) {
@@ -52,6 +68,23 @@ export class StorageService {
    * Load messages from database or localStorage
    */
   static async loadMessages(walletAddress?: string): Promise<MessageData[]> {
+    if (this.isLocalOnly()) {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEYS.MESSAGES);
+        if (!stored) return [];
+        const messages = JSON.parse(stored);
+        const parsedMessages = Array.isArray(messages) ? messages : [];
+        if (walletAddress) {
+          return parsedMessages.filter(msg =>
+            msg.walletAddress?.toLowerCase() === walletAddress.toLowerCase()
+          );
+        }
+        return parsedMessages;
+      } catch (error) {
+        console.error('Failed to load messages from localStorage:', error);
+        return [];
+      }
+    }
     try {
       // Try database first if wallet address is provided
       if (walletAddress && await DatabaseService.isAvailable()) {
@@ -87,6 +120,17 @@ export class StorageService {
    * Add a new message to storage
    */
   static async addMessage(message: MessageData, walletAddress?: string): Promise<void> {
+    if (this.isLocalOnly()) {
+      try {
+        const messages = this.loadMessagesSync();
+        messages.unshift(message);
+        const limitedMessages = messages.slice(0, 50);
+        localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(limitedMessages));
+      } catch (error) {
+        console.error('Failed to add message to localStorage:', error);
+      }
+      return;
+    }
     try {
       // Try database first if wallet address is provided
       if (walletAddress && await DatabaseService.isAvailable()) {
@@ -114,6 +158,14 @@ export class StorageService {
    * Clear all messages
    */
   static async clearMessages(walletAddress?: string): Promise<void> {
+    if (this.isLocalOnly()) {
+      try {
+        localStorage.removeItem(STORAGE_KEYS.MESSAGES);
+      } catch (error) {
+        console.error('Failed to clear messages from localStorage:', error);
+      }
+      return;
+    }
     try {
       // Try database first if wallet address is provided
       if (walletAddress && await DatabaseService.isAvailable()) {
@@ -136,6 +188,18 @@ export class StorageService {
    * Clear messages for specific wallet
    */
   static async clearMessagesForWallet(walletAddress: string): Promise<void> {
+    if (this.isLocalOnly()) {
+      try {
+        const messages = this.loadMessagesSync();
+        const filteredMessages = messages.filter(msg =>
+          msg.walletAddress?.toLowerCase() !== walletAddress.toLowerCase()
+        );
+        localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(filteredMessages));
+      } catch (error) {
+        console.error('Failed to clear messages for wallet from localStorage:', error);
+      }
+      return;
+    }
     try {
       // Try database first
       if (await DatabaseService.isAvailable()) {
@@ -309,11 +373,21 @@ export class StorageService {
 
   // Получение информации о хранилище
   getStorageInfo() {
-    return {
-      useDatabase: this.useDatabase,
-      apiProvider: ApiService.getApiInfo().provider,
-      apiUrl: ApiService.getApiInfo().baseUrl
-    };
+    try {
+      const apiInfo = ApiService.getApiInfo();
+      return {
+        useDatabase: this.useDatabase,
+        apiProvider: apiInfo.provider,
+        apiUrl: apiInfo.baseUrl
+      };
+    } catch (error) {
+      // Fallback for SSR or when API info is not available
+      return {
+        useDatabase: this.useDatabase,
+        apiProvider: getApiProvider(),
+        apiUrl: process.env.NEXT_PUBLIC_VERCEL_API_URL || process.env.NEXT_PUBLIC_AWS_API_URL || ''
+      };
+    }
   }
 
   // ===== LocalStorage методы (fallback) =====
