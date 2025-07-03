@@ -1,3 +1,4 @@
+'use client';
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { MessageData, VerifySignatureResponse } from '@/types';
 import { StorageService } from '@/services/storage';
@@ -55,9 +56,10 @@ export const MessageProvider: React.FC<MessageProviderProps> = ({ children }) =>
     setError(null);
 
     try {
-      // Create message data
-      const messageData: MessageData = {
-        id: generateId(),
+      // Create optimistic message data (do NOT mutate later)
+      const tempId = generateId();
+      const optimisticMessage: MessageData = {
+        id: tempId,
         message,
         signature: '', // Will be filled after signing
         timestamp: Date.now(),
@@ -65,11 +67,10 @@ export const MessageProvider: React.FC<MessageProviderProps> = ({ children }) =>
       };
 
       // Add to messages immediately (optimistic update)
-      setMessages(prev => [messageData, ...prev]);
+      setMessages(prev => [optimisticMessage, ...prev]);
 
       // Get signature from wallet
       const signature = await signMessage(message);
-      messageData.signature = signature;
 
       // Verify signature with backend
       const verificationResult: VerifySignatureResponse = await ApiService.verifySignature({
@@ -77,17 +78,17 @@ export const MessageProvider: React.FC<MessageProviderProps> = ({ children }) =>
         signature,
       });
 
-      // Update message with verification result
+      // Create new updated message object
       const updatedMessage: MessageData = {
-        ...messageData,
+        ...optimisticMessage,
         signature,
         verificationResult,
       };
 
-      // Update messages with verification result
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.id === messageData.id ? updatedMessage : msg
+      // Update messages with verification result (replace by id)
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === tempId ? updatedMessage : msg
         )
       );
 
@@ -96,10 +97,8 @@ export const MessageProvider: React.FC<MessageProviderProps> = ({ children }) =>
 
     } catch (err: any) {
       setError(err.message || 'Failed to sign and verify message');
-      
       // Remove the optimistic message on error
       setMessages(prev => prev.filter(msg => msg.message !== message));
-      
       console.error('Message signing/verification error:', err);
     } finally {
       setIsLoading(false);
