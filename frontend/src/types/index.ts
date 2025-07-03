@@ -13,12 +13,22 @@ export interface DynamicUser {
 }
 
 // Message and Signature Types
+export interface Message {
+  messageId: string;
+  walletAddress: string;
+  message: string;
+  signature: string;
+  timestamp: number;
+  status: 'pending' | 'signed' | 'verified' | 'rejected';
+}
+
 export interface MessageData {
-  id: string;
+  messageId: string;
   message: string;
   signature: string;
   timestamp: number;
   walletAddress: string;
+  status: 'pending' | 'signed' | 'verified' | 'rejected';
   verificationResult?: VerifySignatureResponse;
 }
 

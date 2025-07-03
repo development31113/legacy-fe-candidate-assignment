@@ -1,0 +1,104 @@
+service: web3-message-signer-api
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  environment:
+    DYNAMODB_TABLE: ${self:service}-messages-${sls:stage}
+    DYNAMIC_ENVIRONMENT_ID: ${env:DYNAMIC_ENVIRONMENT_ID}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
+
+functions:
+  verifySignature:
+    handler: src/handlers/verifySignature.handler
+    events:
+      - http:
+          path: /verify-signature
+          method: post
+          cors: true
+    environment:
+      FUNCTION_NAME: verifySignature
+
+  getMessages:
+    handler: src/handlers/messages.handler
+    events:
+      - http:
+          path: /messages
+          method: get
+          cors: true
+    environment:
+      FUNCTION_NAME: getMessages
+
+  saveMessage:
+    handler: src/handlers/messages.handler
+    events:
+      - http:
+          path: /messages
+          method: post
+          cors: true
+    environment:
+      FUNCTION_NAME: saveMessage
+
+  deleteMessages:
+    handler: src/handlers/messages.handler
+    events:
+      - http:
+          path: /messages
+          method: delete
+          cors: true
+    environment:
+      FUNCTION_NAME: deleteMessages
+
+  healthCheck:
+    handler: src/handlers/health.handler
+    events:
+      - http:
+          path: /health
+          method: get
+          cors: true
+    environment:
+      FUNCTION_NAME: healthCheck
+
+resources:
+  Resources:
+    MessagesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.DYNAMODB_TABLE}
+        AttributeDefinitions:
+          - AttributeName: walletAddress
+            AttributeType: S
+          - AttributeName: messageId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: walletAddress
+            KeyType: HASH
+          - AttributeName: messageId
+            KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
+        TimeToLiveSpecification:
+          AttributeName: ttl
+          Enabled: true
+
+plugins:
+  - serverless-offline
+  - serverless-dotenv-plugin
+
+custom:
+  serverless-offline:
+    httpPort: 3001
+    lambdaPort: 3002
+  dotenv:
+    path: .env 

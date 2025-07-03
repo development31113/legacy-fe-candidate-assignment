@@ -1,83 +1,157 @@
-import axios from 'axios';
-import { VerifySignatureRequest, VerifySignatureResponse } from '@/types';
+import { Message, VerifySignatureRequest, VerifySignatureResponse } from '../types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_VERCEL_URL 
-  ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` 
-  : 'http://localhost:3000';
+// Определяем тип API провайдера
+export type ApiProvider = 'vercel' | 'aws';
 
-// Create axios instance with default config
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
+// Конфигурация API
+const API_CONFIG = {
+  vercel: {
+    baseUrl: process.env.NEXT_PUBLIC_VERCEL_API_URL || '/api',
+    endpoints: {
+      verifySignature: '/verify-signature',
+      messages: '/messages',
+      health: '/health'
+    }
   },
-  timeout: 10000,
+  aws: {
+    baseUrl: process.env.NEXT_PUBLIC_AWS_API_URL || '',
+    endpoints: {
+      verifySignature: '/verify-signature',
+      messages: '/messages',
+      health: '/health'
+    }
+  }
+};
+
+// Получаем активный провайдер из переменных окружения
+const getActiveProvider = (): ApiProvider => {
+  return (process.env.NEXT_PUBLIC_API_PROVIDER as ApiProvider) || 'vercel';
+};
+
+// Получаем конфигурацию для активного провайдера
+const getApiConfig = () => {
+  const provider = getActiveProvider();
+  return API_CONFIG[provider];
+};
+
+// Базовый URL для API
+const getBaseUrl = () => {
+  const config = getApiConfig();
+  return config.baseUrl;
+};
+
+// Полный URL для endpoint
+const getEndpointUrl = (endpoint: string) => {
+  const config = getApiConfig();
+  const baseUrl = getBaseUrl();
+  const endpointPath = config.endpoints[endpoint as keyof typeof config.endpoints];
+  
+  if (!endpointPath) {
+    throw new Error(`Unknown endpoint: ${endpoint}`);
+  }
+  
+  return `${baseUrl}${endpointPath}`;
+};
+
+// Общие заголовки для всех запросов
+const getHeaders = () => ({
+  'Content-Type': 'application/json',
 });
 
-// Request interceptor for logging
-apiClient.interceptors.request.use(
-  (config) => {
-    console.log('API Request:', config.method?.toUpperCase(), config.url);
-    return config;
-  },
-  (error) => {
-    console.error('API Request Error:', error);
-    return Promise.reject(error);
+// Обработка ошибок
+const handleResponse = async (response: Response) => {
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
   }
-);
-
-// Response interceptor for error handling
-apiClient.interceptors.response.use(
-  (response) => {
-    console.log('API Response:', response.status, response.config.url);
-    return response;
-  },
-  (error) => {
-    console.error('API Response Error:', error.response?.status, error.response?.data);
-    return Promise.reject(error);
-  }
-);
+  return response.json();
+};
 
 export class ApiService {
-  /**
-   * Verify a message signature (using local API route)
-   */
+  // Проверка здоровья API
+  static async healthCheck(): Promise<any> {
+    try {
+      const response = await fetch(getEndpointUrl('health'), {
+        method: 'GET',
+        headers: getHeaders(),
+      });
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Health check failed:', error);
+      throw error;
+    }
+  }
+
+  // Верификация подписи
   static async verifySignature(data: VerifySignatureRequest): Promise<VerifySignatureResponse> {
     try {
-      console.log('Sending verification request:', {
-        message: data.message.substring(0, 50) + '...',
-        signatureLength: data.signature.length,
-        signaturePrefix: data.signature.substring(0, 20) + '...'
+      const response = await fetch(getEndpointUrl('verifySignature'), {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
       });
-      
-      const response = await apiClient.post('/api/verify-signature', data);
-      console.log('Verification response:', response.data);
-      return response.data.data; // Return data from successful response
-    } catch (error: any) {
-      console.error('Verification error:', error.response?.data || error.message);
-      
-      if (error.response?.data?.message) {
-        throw new Error(error.response.data.message);
-      }
-      if (error.response?.data?.errors) {
-        const errorMessages = error.response.data.errors.map((err: any) => err.message).join(', ');
-        throw new Error(`Validation failed: ${errorMessages}`);
-      }
-      throw new Error('Failed to verify signature');
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Signature verification failed:', error);
+      throw error;
     }
   }
 
-  /**
-   * Health check endpoint (using local API route)
-   */
-  static async healthCheck(): Promise<{ status: string; timestamp: string }> {
+  // Получение сообщений
+  static async getMessages(walletAddress: string): Promise<Message[]> {
     try {
-      const response = await apiClient.get('/api/health');
-      return response.data.data;
-    } catch (error: any) {
-      throw new Error('Database is not available');
+      const url = `${getEndpointUrl('messages')}?walletAddress=${encodeURIComponent(walletAddress)}`;
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: getHeaders(),
+      });
+      const result = await handleResponse(response);
+      return result.data || result; // Поддержка разных форматов ответа
+    } catch (error) {
+      console.error('Failed to get messages:', error);
+      throw error;
     }
   }
-}
 
-export default ApiService; 
+  // Сохранение сообщения
+  static async saveMessage(message: Omit<Message, 'messageId' | 'timestamp'>): Promise<Message> {
+    try {
+      const response = await fetch(getEndpointUrl('messages'), {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(message),
+      });
+      const result = await handleResponse(response);
+      return result.data || result; // Поддержка разных форматов ответа
+    } catch (error) {
+      console.error('Failed to save message:', error);
+      throw error;
+    }
+  }
+
+  // Удаление сообщений
+  static async deleteMessages(walletAddress: string): Promise<void> {
+    try {
+      const url = `${getEndpointUrl('messages')}?walletAddress=${encodeURIComponent(walletAddress)}`;
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: getHeaders(),
+      });
+      await handleResponse(response);
+    } catch (error) {
+      console.error('Failed to delete messages:', error);
+      throw error;
+    }
+  }
+
+  // Получение информации о текущем API провайдере
+  static getApiInfo() {
+    const provider = getActiveProvider();
+    const config = getApiConfig();
+    return {
+      provider,
+      baseUrl: config.baseUrl,
+      endpoints: config.endpoints
+    };
+  }
+} 

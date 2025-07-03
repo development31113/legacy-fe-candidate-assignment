@@ -1,199 +1,342 @@
- # Deployment Guide - Vercel Serverless
+# 🚀 Deployment Guide
 
-## 🚀 Quick Deploy to Vercel
+Этот проект поддерживает развёртывание как на **Vercel**, так и на **AWS** с serverless архитектурой.
 
-This project is now configured for serverless deployment on Vercel with database support.
+## 📋 Содержание
 
-### Prerequisites
+- [Vercel Deployment](#vercel-deployment)
+- [AWS Serverless Deployment](#aws-serverless-deployment)
+- [Environment Variables](#environment-variables)
+- [Database Setup](#database-setup)
+- [Monitoring](#monitoring)
 
-1. **Vercel Account**: Sign up at [vercel.com](https://vercel.com)
-2. **GitHub Repository**: Push your code to GitHub
-3. **Dynamic.xyz Account**: Get your environment ID from [app.dynamic.xyz](https://app.dynamic.xyz/)
+## 🌐 Vercel Deployment
 
-### Step 1: Deploy to Vercel
+### Предварительные требования
 
-1. **Import Project**:
-   - Go to [vercel.com/new](https://vercel.com/new)
-   - Import your GitHub repository
-   - Set root directory to `frontend`
-
-2. **Configure Environment Variables**:
-   ```
-   NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID=your_dynamic_environment_id
+1. **Vercel Account** - [vercel.com](https://vercel.com)
+2. **Vercel CLI** (опционально):
+   ```bash
+   npm i -g vercel
    ```
 
-3. **Deploy**: Click "Deploy"
+### Развёртывание
 
-### Step 2: Setup Vercel KV Database
+1. **Подключите репозиторий к Vercel:**
+   - Перейдите на [vercel.com](https://vercel.com)
+   - Нажмите "New Project"
+   - Выберите ваш GitHub репозиторий
+   - Настройте переменные окружения (см. ниже)
 
-1. **Add KV Database**:
-   - Go to your Vercel project dashboard
-   - Navigate to "Storage" tab
-   - Click "Create Database"
-   - Select "KV" (Redis)
-   - Choose a plan (Hobby plan is free)
-
-2. **Environment Variables** (auto-configured):
+2. **Настройте переменные окружения в Vercel Dashboard:**
+   ```env
+   # Dynamic.xyz
+   NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID=your-dynamic-environment-id
+   
+   # API Configuration
+   NEXT_PUBLIC_API_PROVIDER=vercel
+   NEXT_PUBLIC_VERCEL_API_URL=https://your-app.vercel.app
+   
+   # Vercel KV (автоматически настроится)
+   KV_URL=
+   KV_REST_API_URL=
+   KV_REST_API_TOKEN=
+   KV_REST_API_READ_ONLY_TOKEN=
    ```
-   KV_URL=...
-   KV_REST_API_URL=...
-   KV_REST_API_TOKEN=...
-   KV_REST_API_READ_ONLY_TOKEN=...
+
+3. **Подключите Vercel KV:**
+   - В Vercel Dashboard → Storage → KV
+   - Создайте новую базу данных
+   - Vercel автоматически добавит переменные окружения
+
+4. **Развёртывание:**
+   ```bash
+   # Автоматическое развёртывание при push в main
+   git push origin main
+   
+   # Или локальное развёртывание
+   vercel --prod
    ```
 
-### Step 3: Configure Domain (Optional)
+### Vercel Features
 
-1. **Custom Domain**:
-   - Go to "Settings" → "Domains"
-   - Add your custom domain
-   - Update `NEXT_PUBLIC_VERCEL_URL` in environment variables
+- ✅ **Automatic HTTPS**
+- ✅ **Global CDN**
+- ✅ **Serverless Functions**
+- ✅ **Vercel KV (Redis)**
+- ✅ **Edge Functions**
+- ✅ **Automatic Deployments**
 
-## 🔧 Local Development
+## ☁️ AWS Serverless Deployment
 
-### Prerequisites
+### Предварительные требования
 
-```bash
-# Install dependencies
-cd frontend
-npm install
+1. **AWS Account** с настроенными credentials
+2. **AWS CLI** установлен и настроен:
+   ```bash
+   aws configure
+   ```
+3. **Serverless Framework**:
+   ```bash
+   npm install -g serverless
+   ```
 
-# Copy environment variables
-cp env.example .env.local
-```
+### Развёртывание Backend
 
-### Environment Variables (.env.local)
+1. **Перейдите в папку AWS:**
+   ```bash
+   cd aws
+   ```
 
-```env
-# Dynamic.xyz Configuration
-NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID=your_dynamic_environment_id
+2. **Установите зависимости:**
+   ```bash
+   npm install
+   ```
 
-# Backend URL (for local development)
-NEXT_PUBLIC_BACKEND_URL=http://localhost:3001
+3. **Настройте переменные окружения:**
+   ```bash
+   cp env.example .env
+   ```
+   
+   Отредактируйте `.env`:
+   ```env
+   DYNAMIC_ENVIRONMENT_ID=your-dynamic-environment-id
+   AWS_REGION=us-east-1
+   STAGE=dev
+   ```
 
-# Vercel URL (leave empty for local)
-NEXT_PUBLIC_VERCEL_URL=
-```
+4. **Развёртывание:**
+   ```bash
+   # Development
+   npm run deploy
+   
+   # Production
+   npm run deploy:prod
+   ```
 
-### Run Development Server
+5. **Получите API Gateway URL:**
+   ```bash
+   serverless info
+   ```
 
-```bash
-npm run dev
-```
+### Развёртывание Frontend
 
-## 📊 Database Architecture
+1. **Настройте переменные окружения для AWS:**
+   ```env
+   NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID=your-dynamic-environment-id
+   NEXT_PUBLIC_API_PROVIDER=aws
+   NEXT_PUBLIC_AWS_API_URL=https://your-api-id.execute-api.us-east-1.amazonaws.com/dev
+   ```
+
+2. **Развёртывание на Vercel:**
+   - Используйте тот же процесс, что и выше
+   - Измените только `NEXT_PUBLIC_API_PROVIDER=aws`
+
+3. **Или развёртывание на AWS S3 + CloudFront:**
+   ```bash
+   # Build
+   npm run build
+   
+   # Deploy to S3
+   aws s3 sync out/ s3://your-bucket-name
+   
+   # Invalidate CloudFront
+   aws cloudfront create-invalidation --distribution-id YOUR_DISTRIBUTION_ID --paths "/*"
+   ```
+
+### AWS Services Used
+
+- ✅ **AWS Lambda** - Serverless functions
+- ✅ **API Gateway** - REST API
+- ✅ **DynamoDB** - NoSQL database
+- ✅ **CloudWatch** - Monitoring & logs
+- ✅ **IAM** - Security & permissions
+- ✅ **S3 + CloudFront** - Static hosting (опционально)
+
+## 🔧 Environment Variables
+
+### Frontend Variables
+
+| Variable | Description | Required | Default |
+|----------|-------------|----------|---------|
+| `NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID` | Dynamic.xyz Environment ID | ✅ | - |
+| `NEXT_PUBLIC_API_PROVIDER` | API Provider: 'vercel' or 'aws' | ❌ | 'vercel' |
+| `NEXT_PUBLIC_VERCEL_API_URL` | Vercel API URL | ❌ | '/api' |
+| `NEXT_PUBLIC_AWS_API_URL` | AWS API Gateway URL | ❌ | - |
+
+### Backend Variables (Vercel)
+
+| Variable | Description | Required | Default |
+|----------|-------------|----------|---------|
+| `DYNAMIC_ENVIRONMENT_ID` | Dynamic.xyz Environment ID | ✅ | - |
+| `KV_URL` | Vercel KV URL | ✅ | Auto |
+| `KV_REST_API_URL` | Vercel KV REST API URL | ✅ | Auto |
+| `KV_REST_API_TOKEN` | Vercel KV Token | ✅ | Auto |
+
+### Backend Variables (AWS)
+
+| Variable | Description | Required | Default |
+|----------|-------------|----------|---------|
+| `DYNAMIC_ENVIRONMENT_ID` | Dynamic.xyz Environment ID | ✅ | - |
+| `AWS_REGION` | AWS Region | ❌ | 'us-east-1' |
+| `STAGE` | Deployment stage | ❌ | 'dev' |
+| `DYNAMODB_TABLE` | DynamoDB table name | ❌ | Auto |
+
+## 🗄️ Database Setup
 
 ### Vercel KV (Redis)
 
-- **Storage**: Message history per wallet address
-- **Key Format**: `messages:{walletAddress}`
-- **Value**: Array of MessageData objects
-- **Limit**: 50 messages per wallet
+Автоматически настраивается при подключении в Vercel Dashboard.
 
-### Fallback Strategy
+### AWS DynamoDB
 
-1. **Production**: Vercel KV database
-2. **Local Development**: localStorage
-3. **Error Handling**: Automatic fallback to localStorage
+Автоматически создаётся при развёртывании serverless функций.
 
-## 🔄 Data Flow
+**Схема таблицы:**
+```json
+{
+  "TableName": "web3-message-signer-api-messages-dev",
+  "KeySchema": [
+    {
+      "AttributeName": "walletAddress",
+      "KeyType": "HASH"
+    },
+    {
+      "AttributeName": "messageId", 
+      "KeyType": "RANGE"
+    }
+  ],
+  "TTL": {
+    "AttributeName": "ttl",
+    "Enabled": true
+  }
+}
+```
 
-### Message Signing Process
+## 📊 Monitoring
 
-1. **User signs message** → Wallet generates signature
-2. **Frontend** → Calls `/api/verify-signature`
-3. **Verification** → Serverless function validates signature
-4. **Storage** → Message saved to KV database
-5. **UI Update** → MessageHistory refreshes
+### Vercel
 
-### Data Persistence
+- **Analytics**: Vercel Dashboard → Analytics
+- **Functions**: Vercel Dashboard → Functions
+- **Logs**: Vercel Dashboard → Functions → View Function Logs
 
-- **Cross-device**: Messages stored in Vercel KV
-- **Offline**: Fallback to localStorage
-- **Privacy**: Each wallet sees only their messages
+### AWS
 
-## 🛠️ API Endpoints
+- **CloudWatch Logs**:
+  ```bash
+  # View logs
+  npm run logs -- -f verifySignature
+  npm run logs -- -f getMessages
+  
+  # Tail logs
+  npm run logs -- -f verifySignature --tail
+  ```
 
-### `/api/verify-signature`
-- **Method**: POST
-- **Purpose**: Verify Ethereum message signatures
-- **Input**: `{ message, signature }`
-- **Output**: `{ isValid, signer, originalMessage, timestamp }`
+- **CloudWatch Metrics**:
+  - Lambda invocations
+  - API Gateway requests
+  - DynamoDB operations
+  - Error rates
 
-### `/api/messages`
-- **GET**: Retrieve messages for wallet
-- **POST**: Save new message
-- **DELETE**: Clear messages for wallet
+## 🔒 Security
 
-### `/api/health`
-- **Method**: GET
-- **Purpose**: Database connectivity check
+### Vercel
 
-## 🔒 Security Features
+- ✅ **Automatic HTTPS**
+- ✅ **Environment variables encryption**
+- ✅ **Function isolation**
+- ✅ **Rate limiting**
 
-- **Wallet-specific data**: Each wallet sees only their messages
-- **Signature verification**: Cryptographic validation
-- **Input sanitization**: All inputs validated
-- **Error handling**: Graceful fallbacks
+### AWS
 
-## 📈 Performance
+- ✅ **IAM roles with least privilege**
+- ✅ **API Gateway authentication** (опционально)
+- ✅ **DynamoDB encryption at rest**
+- ✅ **CloudTrail audit logs**
 
-- **Serverless**: Auto-scaling functions
-- **Edge caching**: Global CDN
-- **Database**: Redis for fast access
-- **Optimization**: Only 50 messages per wallet
+## 💰 Cost Estimation
 
-## 🚨 Troubleshooting
+### Vercel (Hobby Plan - Free)
 
-### Common Issues
+- **Frontend**: Free
+- **Serverless Functions**: 100GB-hours/month free
+- **Vercel KV**: 100MB free
+- **Bandwidth**: 100GB/month free
 
-1. **KV Connection Failed**:
-   - Check environment variables
-   - Verify KV database is created
-   - Check Vercel project settings
+### AWS (Pay-per-use)
 
-2. **Dynamic.xyz Not Working**:
-   - Verify environment ID
-   - Check domain whitelist
-   - Test in development first
+**Пример для 10,000 запросов/месяц:**
+- **Lambda**: ~$0.002 (10K invocations)
+- **API Gateway**: ~$0.035 (10K requests)
+- **DynamoDB**: ~$0.0125 (10K operations)
+- **CloudWatch**: ~$0.50 (logs)
+- **Total**: ~$0.55/month
 
-3. **Build Errors**:
-   - Check TypeScript errors
-   - Verify all dependencies installed
-   - Check environment variables
+## 🚀 CI/CD
 
-### Debug Mode
+### GitHub Actions для AWS
 
-Enable detailed logging by checking browser console for:
-- API request/response logs
-- Database operation logs
-- Error details
+Создайте `.github/workflows/deploy-aws.yml`:
 
-## 🔄 Migration from Backend
+```yaml
+name: Deploy to AWS
 
-The project now uses serverless functions instead of a separate backend:
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
-- ✅ **No backend server needed**
-- ✅ **Automatic scaling**
-- ✅ **Global deployment**
-- ✅ **Database included**
-- ✅ **Simplified deployment**
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - run: cd aws && npm install
+      - run: cd aws && npm run deploy:prod
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          DYNAMIC_ENVIRONMENT_ID: ${{ secrets.DYNAMIC_ENVIRONMENT_ID }}
+```
 
-## 📝 Environment Variables Reference
+### Vercel
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID` | Dynamic.xyz environment ID | Yes |
-| `KV_URL` | Vercel KV connection URL | Auto |
-| `KV_REST_API_URL` | KV REST API URL | Auto |
-| `KV_REST_API_TOKEN` | KV API token | Auto |
-| `NEXT_PUBLIC_VERCEL_URL` | Vercel deployment URL | Auto |
+Автоматическое развёртывание при push в main branch.
 
-## 🎯 Next Steps
+## 🔧 Troubleshooting
 
-1. **Deploy to Vercel**
-2. **Setup KV database**
-3. **Configure environment variables**
-4. **Test functionality**
-5. **Monitor performance**
+### Vercel Issues
 
-Your Web3 Message Signer is now ready for production! 🚀
+1. **Functions timeout**:
+   - Увеличьте timeout в `vercel.json`
+   - Оптимизируйте код
+
+2. **KV connection errors**:
+   - Проверьте переменные окружения
+   - Убедитесь, что KV подключена
+
+### AWS Issues
+
+1. **Lambda cold starts**:
+   - Используйте provisioned concurrency
+   - Оптимизируйте bundle size
+
+2. **DynamoDB throttling**:
+   - Увеличьте read/write capacity
+   - Используйте on-demand billing
+
+3. **API Gateway CORS**:
+   - Проверьте CORS настройки в serverless.yml
+   - Добавьте custom domain
+
+## 📚 Additional Resources
+
+- [Vercel Documentation](https://vercel.com/docs)
+- [AWS Serverless Documentation](https://docs.aws.amazon.com/serverless/)
+- [Serverless Framework](https://www.serverless.com/framework/docs/)
+- [Dynamic.xyz Documentation](https://docs.dynamic.xyz/)
