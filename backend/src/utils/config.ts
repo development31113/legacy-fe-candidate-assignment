@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { ServerConfig } from '@/types';
+import { ServerConfig } from '../types';
 
 // Load environment variables
 dotenv.config();

@@ -4,10 +4,10 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
-import config from '@/utils/config';
-import logger from '@/utils/logger';
-import signatureRoutes from '@/routes/signatureRoutes';
-import { errorHandler, notFoundHandler } from '@/middleware/errorHandler';
+import config from './utils/config';
+import logger from './utils/logger';
+import signatureRoutes from './routes/signatureRoutes';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 
 // Create Express app
 const app = express();

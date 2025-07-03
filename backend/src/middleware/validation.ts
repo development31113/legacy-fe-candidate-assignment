@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import Joi from 'joi';
-import { ValidationError } from '@/types';
-import logger from '@/utils/logger';
+import { ValidationError } from '../types';
+import logger from '../utils/logger';
 
 // Validation schemas
 const verifySignatureSchema = Joi.object({

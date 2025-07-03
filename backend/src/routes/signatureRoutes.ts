@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import SignatureController from '@/controllers/signatureController';
-import { validateVerifySignature, sanitizeInput } from '@/middleware/validation';
-import { timeoutHandler } from '@/middleware/errorHandler';
+import SignatureController from '../controllers/signatureController';
+import { validateVerifySignature, sanitizeInput } from '../middleware/validation';
+import { timeoutHandler } from '../middleware/errorHandler';
 
 const router = Router();
 

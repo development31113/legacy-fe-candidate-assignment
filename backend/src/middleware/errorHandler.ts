@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { ApiError } from '@/types';
-import logger from '@/utils/logger';
+import { ApiError } from '../types';
+import logger from '../utils/logger';
 
 // Custom error class
 export class AppError extends Error {

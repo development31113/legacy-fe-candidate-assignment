@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
-import { SignatureVerificationResult, VerifySignatureRequest } from '@/types';
-import logger from '@/utils/logger';
+import { SignatureVerificationResult, VerifySignatureRequest } from '../types';
+import logger from '../utils/logger';
 
 export class SignatureService {
   /**

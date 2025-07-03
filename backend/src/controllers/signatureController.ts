@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
-import { VerifySignatureResponse } from '@/types';
-import SignatureService from '@/services/signatureService';
-import logger from '@/utils/logger';
-import { asyncHandler } from '@/middleware/errorHandler';
+import { VerifySignatureResponse } from '../types';
+import SignatureService from '../services/signatureService';
+import logger from '../utils/logger';
+import { asyncHandler } from '../middleware/errorHandler';
 
 export class SignatureController {
   /**

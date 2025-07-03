@@ -1,4 +1,4 @@
-import { LogEntry } from '@/types';
+import { LogEntry } from '../types';
 
 class Logger {
   private formatMessage(level: LogEntry['level'], message: string, meta?: any): string {
