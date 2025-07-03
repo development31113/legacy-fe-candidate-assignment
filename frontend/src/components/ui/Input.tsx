@@ -11,6 +11,8 @@ const Input: React.FC<InputProps> = ({
   disabled = false,
   className = '',
   type = 'text',
+  as = 'input',
+  rows = 3,
   ...props
 }) => {
   const inputClasses = cn(
@@ -26,15 +28,27 @@ const Input: React.FC<InputProps> = ({
           {label}
         </label>
       )}
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        disabled={disabled}
-        className={inputClasses}
-        {...props}
-      />
+      {as === 'textarea' ? (
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          disabled={disabled}
+          className={inputClasses}
+          rows={rows}
+          {...props}
+        />
+      ) : (
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          disabled={disabled}
+          className={inputClasses}
+          {...props}
+        />
+      )}
       {error && (
         <p className="mt-1 text-sm text-error-600">{error}</p>
       )}
