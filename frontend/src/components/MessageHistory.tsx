@@ -1,5 +1,5 @@
 import React from 'react';
-import { useMessages } from '@/hooks/useMessages';
+import { useMessageContext } from '@/contexts/MessageContext';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { formatAddress, formatRelativeTime, truncateText } from '@/utils/format';
@@ -16,7 +16,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 const MessageHistory: React.FC = () => {
-  const { messages, clearMessages, refreshMessages, isLoading } = useMessages();
+  const { messages, clearMessages, refreshMessages, isLoading } = useMessageContext();
 
   const handleCopyMessage = async (text: string) => {
     await navigator.clipboard.writeText(text);

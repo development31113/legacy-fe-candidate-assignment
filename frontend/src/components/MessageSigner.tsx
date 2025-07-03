@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useWallet } from '@/hooks/useWallet';
-import { useMessages } from '@/hooks/useMessages';
+import { useMessageContext } from '@/contexts/MessageContext';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Card from '@/components/ui/Card';
@@ -9,7 +9,7 @@ import { motion } from 'framer-motion';
 
 const MessageSigner: React.FC = () => {
   const { user, isConnected } = useWallet();
-  const { signAndVerifyMessage, isLoading, error } = useMessages();
+  const { signAndVerifyMessage, isLoading, error } = useMessageContext();
   const [message, setMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
 

@@ -4,6 +4,7 @@ import React from 'react';
 import WalletConnect from '@/components/WalletConnect';
 import MessageSigner from '@/components/MessageSigner';
 import MessageHistory from '@/components/MessageHistory';
+import { MessageProvider } from '@/contexts/MessageContext';
 import { Shield, Zap, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -102,27 +103,29 @@ export default function Home() {
           </motion.div>
 
           {/* Main Application */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left Column - Wallet & Signing */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="space-y-6"
-            >
-              <WalletConnect />
-              <MessageSigner />
-            </motion.div>
+          <MessageProvider>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Left Column - Wallet & Signing */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="space-y-6"
+              >
+                <WalletConnect />
+                <MessageSigner />
+              </motion.div>
 
-            {/* Right Column - History */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-            >
-              <MessageHistory />
-            </motion.div>
-          </div>
+              {/* Right Column - History */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+              >
+                <MessageHistory />
+              </motion.div>
+            </div>
+          </MessageProvider>
 
           {/* Footer */}
           <motion.footer
