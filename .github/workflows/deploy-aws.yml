@@ -1,0 +1,72 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'aws/**'
+      - '.github/workflows/deploy-aws.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'aws/**'
+      - '.github/workflows/deploy-aws.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: aws/package-lock.json
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+
+      - name: Install dependencies
+        working-directory: ./aws
+        run: npm ci
+
+      - name: Run tests
+        working-directory: ./aws
+        run: npm test
+        env:
+          DYNAMIC_ENVIRONMENT_ID: ${{ secrets.DYNAMIC_ENVIRONMENT_ID }}
+
+      - name: Deploy to AWS
+        working-directory: ./aws
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            npm run deploy:prod
+          else
+            npm run deploy
+          fi
+        env:
+          DYNAMIC_ENVIRONMENT_ID: ${{ secrets.DYNAMIC_ENVIRONMENT_ID }}
+          AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
+          STAGE: ${{ github.ref == 'refs/heads/main' && 'production' || 'dev' }}
+
+      - name: Get deployment info
+        working-directory: ./aws
+        run: |
+          echo "Deployment completed successfully!"
+          echo "Stage: ${{ github.ref == 'refs/heads/main' && 'production' || 'dev' }}"
+          echo "Region: ${{ secrets.AWS_REGION || 'us-east-1' }}"
+        if: success()
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "Deployment failed!"
+          echo "Check the logs above for more details." 
