@@ -4,7 +4,7 @@ import { useMessageContext } from '@/contexts/MessageContext';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Card from '@/components/ui/Card';
-import { Send, FileText, CheckCircle, AlertCircle } from 'lucide-react';
+import { Send, FileText, CheckCircle, AlertCircle, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const MessageSigner: React.FC = () => {
@@ -96,6 +96,26 @@ const MessageSigner: React.FC = () => {
             </Button>
           </div>
 
+          {/* Loading State with Instructions */}
+          {isLoading && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-start space-x-3 p-4 bg-primary-50 border border-primary-200 rounded-lg"
+            >
+              <Clock className="w-5 h-5 text-primary-600 mt-0.5 flex-shrink-0" />
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-primary-800">
+                  Waiting for wallet signature...
+                </p>
+                <p className="text-xs text-primary-600">
+                  Please check your wallet and approve the signature request. 
+                  This may take a few moments.
+                </p>
+              </div>
+            </motion.div>
+          )}
+
           {isSuccess && (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -116,9 +136,16 @@ const MessageSigner: React.FC = () => {
               className="flex items-center space-x-2 p-3 bg-error-50 border border-error-200 rounded-lg"
             >
               <AlertCircle className="w-5 h-5 text-error-600" />
-              <span className="text-sm font-medium text-error-800">
-                {error}
-              </span>
+              <div className="flex-1">
+                <span className="text-sm font-medium text-error-800">
+                  {error}
+                </span>
+                {error.includes('rejected') || error.includes('cancelled') ? (
+                  <p className="text-xs text-error-600 mt-1">
+                    The signature was rejected. Please try again and approve the request in your wallet.
+                  </p>
+                ) : null}
+              </div>
             </motion.div>
           )}
         </form>
