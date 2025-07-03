@@ -73,6 +73,8 @@ export interface InputProps {
   disabled?: boolean;
   className?: string;
   type?: 'text' | 'password' | 'email';
+  as?: 'input' | 'textarea';
+  rows?: number;
 }
 
 export interface CardProps {
