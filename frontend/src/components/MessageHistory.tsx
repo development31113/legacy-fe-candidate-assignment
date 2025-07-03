@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMessageContext } from '@/contexts/MessageContext';
 import { useWallet } from '@/hooks/useWallet';
+import { MessageData } from '@/types';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { formatAddress, formatRelativeTime, truncateText } from '@/utils/format';
@@ -19,11 +20,30 @@ import { motion, AnimatePresence } from 'framer-motion';
 const MessageHistory: React.FC = () => {
   const { getMessagesForWallet, clearMessagesForWallet, refreshMessages, isLoading } = useMessageContext();
   const { user, isConnected } = useWallet();
-  
-  // Get messages only for the current wallet
-  const messages = isConnected && user?.walletAddress 
-    ? getMessagesForWallet(user.walletAddress)
-    : [];
+  const [messages, setMessages] = useState<MessageData[]>([]);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+
+  // Load messages for current wallet
+  useEffect(() => {
+    const loadWalletMessages = async () => {
+      if (!isConnected || !user?.walletAddress) {
+        setMessages([]);
+        return;
+      }
+
+      setIsLoadingMessages(true);
+      try {
+        const walletMessages = getMessagesForWallet(user.walletAddress);
+        setMessages(walletMessages);
+      } catch (error) {
+        console.error('Failed to load wallet messages:', error);
+      } finally {
+        setIsLoadingMessages(false);
+      }
+    };
+
+    loadWalletMessages();
+  }, [isConnected, user?.walletAddress, getMessagesForWallet]);
 
   const handleCopyMessage = async (text: string) => {
     await navigator.clipboard.writeText(text);
@@ -33,9 +53,25 @@ const MessageHistory: React.FC = () => {
     await navigator.clipboard.writeText(signature);
   };
 
-  const handleClearMessages = () => {
+  const handleClearMessages = async () => {
     if (user?.walletAddress) {
-      clearMessagesForWallet(user.walletAddress);
+      await clearMessagesForWallet(user.walletAddress);
+      setMessages([]);
+    }
+  };
+
+  const handleRefreshMessages = async () => {
+    if (user?.walletAddress) {
+      setIsLoadingMessages(true);
+      try {
+        await refreshMessages();
+        const walletMessages = getMessagesForWallet(user.walletAddress);
+        setMessages(walletMessages);
+      } catch (error) {
+        console.error('Failed to refresh messages:', error);
+      } finally {
+        setIsLoadingMessages(false);
+      }
     }
   };
 
@@ -92,10 +128,10 @@ const MessageHistory: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={refreshMessages}
-              disabled={isLoading}
+              onClick={handleRefreshMessages}
+              disabled={isLoadingMessages}
             >
-              <RefreshCw className={`w-4 h-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 mr-1 ${isLoadingMessages ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
             <Button

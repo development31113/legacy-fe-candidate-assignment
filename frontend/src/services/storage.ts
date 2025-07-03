@@ -1,4 +1,5 @@
 import { MessageData } from '@/types';
+import { DatabaseService } from './database';
 
 const STORAGE_KEYS = {
   MESSAGES: 'web3_messages',
@@ -7,9 +8,23 @@ const STORAGE_KEYS = {
 
 export class StorageService {
   /**
-   * Save messages to localStorage
+   * Save messages to database or localStorage
    */
-  static saveMessages(messages: MessageData[]): void {
+  static async saveMessages(messages: MessageData[], walletAddress?: string): Promise<void> {
+    try {
+      // Try database first if wallet address is provided
+      if (walletAddress && await DatabaseService.isAvailable()) {
+        // Save each message to database
+        for (const message of messages) {
+          await DatabaseService.saveMessage(message, walletAddress);
+        }
+        return;
+      }
+    } catch (error) {
+      console.warn('Database save failed, falling back to localStorage:', error);
+    }
+
+    // Fallback to localStorage
     try {
       localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(messages));
     } catch (error) {
@@ -18,15 +33,34 @@ export class StorageService {
   }
 
   /**
-   * Load messages from localStorage
+   * Load messages from database or localStorage
    */
-  static loadMessages(): MessageData[] {
+  static async loadMessages(walletAddress?: string): Promise<MessageData[]> {
+    try {
+      // Try database first if wallet address is provided
+      if (walletAddress && await DatabaseService.isAvailable()) {
+        return await DatabaseService.getMessages(walletAddress);
+      }
+    } catch (error) {
+      console.warn('Database load failed, falling back to localStorage:', error);
+    }
+
+    // Fallback to localStorage
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.MESSAGES);
       if (!stored) return [];
       
       const messages = JSON.parse(stored);
-      return Array.isArray(messages) ? messages : [];
+      const parsedMessages = Array.isArray(messages) ? messages : [];
+      
+      // Filter by wallet address if provided
+      if (walletAddress) {
+        return parsedMessages.filter(msg => 
+          msg.walletAddress?.toLowerCase() === walletAddress.toLowerCase()
+        );
+      }
+      
+      return parsedMessages;
     } catch (error) {
       console.error('Failed to load messages from localStorage:', error);
       return [];
@@ -36,23 +70,45 @@ export class StorageService {
   /**
    * Add a new message to storage
    */
-  static addMessage(message: MessageData): void {
+  static async addMessage(message: MessageData, walletAddress?: string): Promise<void> {
     try {
-      const messages = this.loadMessages();
+      // Try database first if wallet address is provided
+      if (walletAddress && await DatabaseService.isAvailable()) {
+        await DatabaseService.saveMessage(message, walletAddress);
+        return;
+      }
+    } catch (error) {
+      console.warn('Database add failed, falling back to localStorage:', error);
+    }
+
+    // Fallback to localStorage
+    try {
+      const messages = this.loadMessagesSync();
       messages.unshift(message); // Add to beginning
       
       // Keep only last 50 messages
       const limitedMessages = messages.slice(0, 50);
-      this.saveMessages(limitedMessages);
+      localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(limitedMessages));
     } catch (error) {
-      console.error('Failed to add message to storage:', error);
+      console.error('Failed to add message to localStorage:', error);
     }
   }
 
   /**
    * Clear all messages
    */
-  static clearMessages(): void {
+  static async clearMessages(walletAddress?: string): Promise<void> {
+    try {
+      // Try database first if wallet address is provided
+      if (walletAddress && await DatabaseService.isAvailable()) {
+        await DatabaseService.clearMessages(walletAddress);
+        return;
+      }
+    } catch (error) {
+      console.warn('Database clear failed, falling back to localStorage:', error);
+    }
+
+    // Fallback to localStorage
     try {
       localStorage.removeItem(STORAGE_KEYS.MESSAGES);
     } catch (error) {
@@ -63,15 +119,42 @@ export class StorageService {
   /**
    * Clear messages for specific wallet
    */
-  static clearMessagesForWallet(walletAddress: string): void {
+  static async clearMessagesForWallet(walletAddress: string): Promise<void> {
     try {
-      const messages = this.loadMessages();
+      // Try database first
+      if (await DatabaseService.isAvailable()) {
+        await DatabaseService.clearMessages(walletAddress);
+        return;
+      }
+    } catch (error) {
+      console.warn('Database clear failed, falling back to localStorage:', error);
+    }
+
+    // Fallback to localStorage
+    try {
+      const messages = this.loadMessagesSync();
       const filteredMessages = messages.filter(msg => 
         msg.walletAddress?.toLowerCase() !== walletAddress.toLowerCase()
       );
-      this.saveMessages(filteredMessages);
+      localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(filteredMessages));
     } catch (error) {
       console.error('Failed to clear messages for wallet from localStorage:', error);
+    }
+  }
+
+  /**
+   * Synchronous load messages from localStorage (for backward compatibility)
+   */
+  private static loadMessagesSync(): MessageData[] {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.MESSAGES);
+      if (!stored) return [];
+      
+      const messages = JSON.parse(stored);
+      return Array.isArray(messages) ? messages : [];
+    } catch (error) {
+      console.error('Failed to load messages from localStorage:', error);
+      return [];
     }
   }
 

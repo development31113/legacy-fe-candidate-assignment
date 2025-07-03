@@ -39,9 +39,10 @@ export const MessageProvider: React.FC<MessageProviderProps> = ({ children }) =>
 
   // Load messages from storage on mount
   useEffect(() => {
-    const loadMessages = () => {
+    const loadMessages = async () => {
       try {
-        const storedMessages = StorageService.loadMessages();
+        // Load messages for current user if connected
+        const storedMessages = await StorageService.loadMessages();
         setMessages(storedMessages);
       } catch (err) {
         console.error('Failed to load messages:', err);
@@ -99,8 +100,8 @@ export const MessageProvider: React.FC<MessageProviderProps> = ({ children }) =>
         )
       );
 
-      // Save to storage
-      StorageService.addMessage(updatedMessage);
+      // Save to storage (database with fallback to localStorage)
+      await StorageService.addMessage(updatedMessage, walletAddress);
 
     } catch (err: any) {
       console.error('Message signing/verification error:', err);
@@ -113,15 +114,15 @@ export const MessageProvider: React.FC<MessageProviderProps> = ({ children }) =>
   }, [signMessage]);
 
   // Clear all messages
-  const clearMessages = useCallback(() => {
+  const clearMessages = useCallback(async () => {
     setMessages([]);
-    StorageService.clearMessages();
+    await StorageService.clearMessages();
   }, []);
 
   // Refresh messages from storage
-  const refreshMessages = useCallback(() => {
+  const refreshMessages = useCallback(async () => {
     try {
-      const storedMessages = StorageService.loadMessages();
+      const storedMessages = await StorageService.loadMessages();
       setMessages(storedMessages);
       setError(null);
     } catch (err) {

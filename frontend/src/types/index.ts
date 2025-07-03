@@ -42,6 +42,7 @@ export interface VerifySignatureResponse {
   isValid: boolean;
   signer: string;
   originalMessage: string;
+  timestamp?: string;
 }
 
 // UI State Types

@@ -1,7 +1,9 @@
 import axios from 'axios';
 import { VerifySignatureRequest, VerifySignatureResponse } from '@/types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.NEXT_PUBLIC_VERCEL_URL 
+  ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` 
+  : 'http://localhost:3000';
 
 // Create axios instance with default config
 const apiClient = axios.create({
@@ -38,7 +40,7 @@ apiClient.interceptors.response.use(
 
 export class ApiService {
   /**
-   * Verify a message signature
+   * Verify a message signature (using local API route)
    */
   static async verifySignature(data: VerifySignatureRequest): Promise<VerifySignatureResponse> {
     try {
@@ -50,7 +52,7 @@ export class ApiService {
       
       const response = await apiClient.post('/api/verify-signature', data);
       console.log('Verification response:', response.data);
-      return response.data.data;
+      return response.data.data; // Return data from successful response
     } catch (error: any) {
       console.error('Verification error:', error.response?.data || error.message);
       
@@ -66,14 +68,14 @@ export class ApiService {
   }
 
   /**
-   * Health check endpoint
+   * Health check endpoint (using local API route)
    */
   static async healthCheck(): Promise<{ status: string; timestamp: string }> {
     try {
       const response = await apiClient.get('/api/health');
-      return response.data;
+      return response.data.data;
     } catch (error: any) {
-      throw new Error('Backend is not available');
+      throw new Error('Database is not available');
     }
   }
 }
