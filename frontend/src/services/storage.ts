@@ -61,6 +61,21 @@ export class StorageService {
   }
 
   /**
+   * Clear messages for specific wallet
+   */
+  static clearMessagesForWallet(walletAddress: string): void {
+    try {
+      const messages = this.loadMessages();
+      const filteredMessages = messages.filter(msg => 
+        msg.walletAddress?.toLowerCase() !== walletAddress.toLowerCase()
+      );
+      this.saveMessages(filteredMessages);
+    } catch (error) {
+      console.error('Failed to clear messages for wallet from localStorage:', error);
+    }
+  }
+
+  /**
    * Save user preferences
    */
   static saveUserPreferences(preferences: Record<string, any>): void {

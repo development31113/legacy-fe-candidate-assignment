@@ -12,7 +12,9 @@ interface MessageContextType {
   error: string | null;
   signAndVerifyMessage: (message: string, walletAddress: string) => Promise<void>;
   clearMessages: () => void;
+  clearMessagesForWallet: (walletAddress: string) => void;
   refreshMessages: () => void;
+  getMessagesForWallet: (walletAddress: string) => MessageData[];
 }
 
 const MessageContext = createContext<MessageContextType | undefined>(undefined);
@@ -128,13 +130,28 @@ export const MessageProvider: React.FC<MessageProviderProps> = ({ children }) =>
     }
   }, []);
 
+  // Get messages for specific wallet
+  const getMessagesForWallet = useCallback((walletAddress: string): MessageData[] => {
+    return messages.filter(msg => 
+      msg.walletAddress?.toLowerCase() === walletAddress.toLowerCase()
+    );
+  }, [messages]);
+
+  // Clear messages for specific wallet
+  const clearMessagesForWallet = useCallback((walletAddress: string) => {
+    setMessages(prev => prev.filter(msg => msg.walletAddress !== walletAddress));
+    StorageService.clearMessagesForWallet(walletAddress);
+  }, []);
+
   const value: MessageContextType = {
     messages,
     isLoading,
     error,
     signAndVerifyMessage,
     clearMessages,
+    clearMessagesForWallet,
     refreshMessages,
+    getMessagesForWallet,
   };
 
   return (

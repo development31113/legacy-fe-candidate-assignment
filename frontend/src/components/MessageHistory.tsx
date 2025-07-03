@@ -1,5 +1,6 @@
 import React from 'react';
 import { useMessageContext } from '@/contexts/MessageContext';
+import { useWallet } from '@/hooks/useWallet';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { formatAddress, formatRelativeTime, truncateText } from '@/utils/format';
@@ -16,7 +17,13 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 const MessageHistory: React.FC = () => {
-  const { messages, clearMessages, refreshMessages, isLoading } = useMessageContext();
+  const { getMessagesForWallet, clearMessagesForWallet, refreshMessages, isLoading } = useMessageContext();
+  const { user, isConnected } = useWallet();
+  
+  // Get messages only for the current wallet
+  const messages = isConnected && user?.walletAddress 
+    ? getMessagesForWallet(user.walletAddress)
+    : [];
 
   const handleCopyMessage = async (text: string) => {
     await navigator.clipboard.writeText(text);
@@ -25,6 +32,30 @@ const MessageHistory: React.FC = () => {
   const handleCopySignature = async (signature: string) => {
     await navigator.clipboard.writeText(signature);
   };
+
+  const handleClearMessages = () => {
+    if (user?.walletAddress) {
+      clearMessagesForWallet(user.walletAddress);
+    }
+  };
+
+  if (!isConnected) {
+    return (
+      <Card className="text-center bg-secondary-50">
+        <div className="flex flex-col items-center space-y-3 py-8">
+          <History className="w-12 h-12 text-secondary-400" />
+          <div>
+            <h3 className="text-lg font-semibold text-secondary-900 mb-1">
+              Message History
+            </h3>
+            <p className="text-secondary-600">
+              Connect your wallet to view your message history
+            </p>
+          </div>
+        </div>
+      </Card>
+    );
+  }
 
   if (messages.length === 0) {
     return (
@@ -70,7 +101,7 @@ const MessageHistory: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={clearMessages}
+              onClick={handleClearMessages}
               className="text-error-600 hover:text-error-700"
             >
               <Trash2 className="w-4 h-4 mr-1" />
