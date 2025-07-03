@@ -55,7 +55,7 @@ WEB3-TEST/
 
 1. **Clone and install all dependencies:**
    ```bash
-   git clone git@github.com:development31113/Web3-Message-Signer.git
+   git clone [git@github.com:development31113/Web3-Message-Signer.git](https://github.com/development31113/Web3-Message-Signer) 
    cd WEB3-TEST
    npm run install:all
    ```
