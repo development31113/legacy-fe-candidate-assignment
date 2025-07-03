@@ -42,11 +42,24 @@ export class ApiService {
    */
   static async verifySignature(data: VerifySignatureRequest): Promise<VerifySignatureResponse> {
     try {
+      console.log('Sending verification request:', {
+        message: data.message.substring(0, 50) + '...',
+        signatureLength: data.signature.length,
+        signaturePrefix: data.signature.substring(0, 20) + '...'
+      });
+      
       const response = await apiClient.post('/api/verify-signature', data);
-      return response.data;
+      console.log('Verification response:', response.data);
+      return response.data.data;
     } catch (error: any) {
+      console.error('Verification error:', error.response?.data || error.message);
+      
       if (error.response?.data?.message) {
         throw new Error(error.response.data.message);
+      }
+      if (error.response?.data?.errors) {
+        const errorMessages = error.response.data.errors.map((err: any) => err.message).join(', ');
+        throw new Error(`Validation failed: ${errorMessages}`);
       }
       throw new Error('Failed to verify signature');
     }

@@ -70,13 +70,18 @@ export const MessageProvider: React.FC<MessageProviderProps> = ({ children }) =>
       setMessages(prev => [optimisticMessage, ...prev]);
 
       // Get signature from wallet
+      console.log('Requesting signature for message:', message);
       const signature = await signMessage(message);
+      console.log('Received signature:', signature);
+      console.log('Signature length:', signature.length);
 
       // Verify signature with backend
+      console.log('Sending verification request to backend...');
       const verificationResult: VerifySignatureResponse = await ApiService.verifySignature({
         message,
         signature,
       });
+      console.log('Verification result:', verificationResult);
 
       // Create new updated message object
       const updatedMessage: MessageData = {
@@ -96,10 +101,10 @@ export const MessageProvider: React.FC<MessageProviderProps> = ({ children }) =>
       StorageService.addMessage(updatedMessage);
 
     } catch (err: any) {
+      console.error('Message signing/verification error:', err);
       setError(err.message || 'Failed to sign and verify message');
       // Remove the optimistic message on error
       setMessages(prev => prev.filter(msg => msg.message !== message));
-      console.error('Message signing/verification error:', err);
     } finally {
       setIsLoading(false);
     }

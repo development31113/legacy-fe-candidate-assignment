@@ -50,12 +50,24 @@ export function useWallet(): UseWalletReturn {
     if (!primaryWallet) {
       throw new Error('Wallet not connected');
     }
+    
+    console.log('Signing message with wallet:', {
+      walletAddress: primaryWallet.address,
+      message: message.substring(0, 50) + '...',
+      hasConnector: !!primaryWallet.connector,
+      connectorType: typeof primaryWallet.connector
+    });
+    
     // 1. Если есть кастомный signMessage (например, у embedded wallet)
     if (primaryWallet.connector && typeof (primaryWallet.connector as any).signMessage === 'function') {
-      return await (primaryWallet.connector as any).signMessage(message);
+      console.log('Using connector.signMessage method');
+      const signature = await (primaryWallet.connector as any).signMessage(message);
+      console.log('Signature from connector.signMessage:', signature);
+      return signature;
     }
     // 2. Если есть provider.request (EVM wallets)
     if (primaryWallet.connector && (primaryWallet.connector as any).provider && typeof (primaryWallet.connector as any).provider.request === 'function') {
+      console.log('Using provider.request method');
       const address = primaryWallet.address;
       const provider = (primaryWallet.connector as any).provider;
       try {
@@ -64,6 +76,7 @@ export function useWallet(): UseWalletReturn {
           method: 'personal_sign',
           params: [message, address],
         });
+        console.log('Signature from provider.request:', signature);
         return signature;
       } catch (err: any) {
         console.error('Message signing error:', err);
